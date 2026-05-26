@@ -1,12 +1,19 @@
 {
-  "name": "express-app",
+  "name": "job-lead-scanner",
   "version": "1.0.0",
-  "description": "A minimal Node.js Express web app",
+  "description": "Scans job alert emails from Gmail and scores listings against your background using Claude",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
   },
   "dependencies": {
-    "express": "^4.21.2"
+    "@anthropic-ai/sdk": "^0.24.0",
+    "dotenv": "^16.4.0",
+    "express": "^4.19.0",
+    "express-session": "^1.18.0",
+    "googleapis": "^140.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   }
 }

@@ -3,16 +3,103 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Express App</title>
+  <title>Job Lead Scanner</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <div class="container">
-    <h1>Hello from Express</h1>
-    <p>Edit the files in <code>public/</code> to get started.</p>
-    <button id="btn">Click me</button>
-    <p id="message"></p>
-  </div>
+
+  <!-- ── Header ─────────────────────────────────────────────── -->
+  <header class="app-header">
+    <div class="header-inner">
+      <div class="header-brand">
+        <span class="brand-icon">📬</span>
+        <div>
+          <h1 class="brand-title">Job Lead Scanner</h1>
+          <p class="brand-sub">Reads your job alert emails · scores every listing · finds your best fits</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <div id="authSection" class="auth-section">
+          <!-- Populated by app.js -->
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ── Main ───────────────────────────────────────────────── -->
+  <main class="app-main">
+
+    <!-- Stat cards -->
+    <section class="stats-grid" id="statsGrid">
+      <div class="stat-card">
+        <span class="stat-value" id="statEmails">—</span>
+        <span class="stat-label">Emails scanned</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-value" id="statListings">—</span>
+        <span class="stat-label">Listings found</span>
+      </div>
+      <div class="stat-card stat-card--strong">
+        <span class="stat-value" id="statStrong">—</span>
+        <span class="stat-label">Strong matches</span>
+      </div>
+      <div class="stat-card stat-card--skip">
+        <span class="stat-value" id="statSkip">—</span>
+        <span class="stat-label">Skipped</span>
+      </div>
+    </section>
+
+    <!-- Progress / status bar -->
+    <div id="statusBar" class="status-bar hidden">
+      <div class="status-bar-inner">
+        <span class="status-spinner" aria-hidden="true"></span>
+        <span id="statusMsg" class="status-msg">Starting scan…</span>
+      </div>
+      <div class="progress-track">
+        <div class="progress-fill" id="progressFill" style="width:0%"></div>
+      </div>
+    </div>
+
+    <!-- Error banner -->
+    <div id="errorBanner" class="error-banner hidden">
+      <strong>Something went wrong:</strong> <span id="errorMsg"></span>
+    </div>
+
+    <!-- Filter tabs -->
+    <div class="filter-bar" id="filterBar">
+      <button class="filter-tab active" data-filter="all">All</button>
+      <button class="filter-tab" data-filter="strong">
+        <span class="dot dot--strong"></span>Strong match
+        <span class="tab-count" id="countStrong">0</span>
+      </button>
+      <button class="filter-tab" data-filter="maybe">
+        <span class="dot dot--maybe"></span>Maybe
+        <span class="tab-count" id="countMaybe">0</span>
+      </button>
+      <button class="filter-tab" data-filter="skip">
+        <span class="dot dot--skip"></span>Skip
+        <span class="tab-count" id="countSkip">0</span>
+      </button>
+    </div>
+
+    <!-- Empty / welcome state -->
+    <div id="emptyState" class="empty-state">
+      <div class="empty-icon">🔍</div>
+      <h2 class="empty-title">No listings yet</h2>
+      <p class="empty-body">Connect your Gmail account and click <strong>Scan inbox</strong> to pull your last 30 days of job alert emails and score every listing.</p>
+    </div>
+
+    <!-- Listings grid -->
+    <div class="listings-grid" id="listingsGrid">
+      <!-- Cards injected by app.js -->
+    </div>
+
+  </main>
+
+  <footer class="app-footer">
+    <p>Powered by Gmail API + Claude · reads <strong>gmail.readonly</strong> only · nothing is stored</p>
+  </footer>
+
   <script src="app.js"></script>
 </body>
 </html>
