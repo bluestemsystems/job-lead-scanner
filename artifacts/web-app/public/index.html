@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Express Web App</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Express Web App</h1>
+      <p class="subtitle">A Node.js + Express static file server</p>
+    </header>
+
+    <main>
+      <section class="card">
+        <h2>Welcome</h2>
+        <p>Your Express server is up and running. Edit the files in the <code>public/</code> folder to customize this page.</p>
+      </section>
+
+      <section class="card">
+        <h2>Counter</h2>
+        <p>A simple interactive example:</p>
+        <div class="counter">
+          <button id="decrement">−</button>
+          <span id="count">0</span>
+          <button id="increment">+</button>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Project Structure</h2>
+        <ul class="file-tree">
+          <li><span class="folder">web-app/</span>
+            <ul>
+              <li><span class="file">server.js</span> — Express entry point</li>
+              <li><span class="folder">public/</span>
+                <ul>
+                  <li><span class="file">index.html</span> — this page</li>
+                  <li><span class="file">style.css</span> — styles</li>
+                  <li><span class="file">script.js</span> — client-side JS</li>
+                </ul>
+              </li>
+              <li><span class="file">package.json</span> — npm config</li>
+            </ul>
+          </li>
+        </ul>
+      </section>
+    </main>
+
+    <footer>
+      <p>Running on Express · <span id="timestamp"></span></p>
+    </footer>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
