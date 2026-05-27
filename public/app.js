@@ -1,3 +1,4 @@
+
 /* ── State ─────────────────────────────────────────────────────────────────── */
 let allListings = [];
 let activeFilter = 'all';
@@ -19,6 +20,8 @@ const statSkip      = document.getElementById('statSkip');
 const countStrong   = document.getElementById('countStrong');
 const countMaybe    = document.getElementById('countMaybe');
 const countSkip     = document.getElementById('countSkip');
+const profileModal  = document.getElementById('profileModal');
+const profileForm   = document.getElementById('profileForm');
 
 /* ── Init ──────────────────────────────────────────────────────────────────── */
 (async function init() {
@@ -30,24 +33,36 @@ const countSkip     = document.getElementById('countSkip');
   }
 
   const status = await fetchJSON('/api/status');
-  renderAuthSection(status.authenticated);
 
   if (params.get('auth') === 'success') {
     window.history.replaceState({}, '', '/');
   }
+
+  renderAuthSection(status.authenticated, status.hasProfile);
+
+  // If authenticated but no profile, show setup form
+  if (status.authenticated && !status.hasProfile) {
+    showProfileModal();
+  }
 })();
 
 /* ── Auth UI ───────────────────────────────────────────────────────────────── */
-function renderAuthSection(authenticated) {
+function renderAuthSection(authenticated, hasProfile) {
   if (authenticated) {
     authSection.innerHTML = `
       <span class="auth-badge">
         <span class="auth-dot"></span>Gmail connected
       </span>
-      <button class="btn btn-primary" id="scanBtn">📥 Scan inbox</button>
+      ${hasProfile ? `<button class="btn btn-primary" id="scanBtn">📥 Scan inbox</button>` : `<button class="btn btn-primary" id="setupBtn">⚙️ Set up profile</button>`}
+      <button class="btn btn-ghost" id="editProfileBtn">Edit profile</button>
       <a href="/logout" class="btn btn-ghost">Sign out</a>
     `;
-    document.getElementById('scanBtn').addEventListener('click', startScan);
+    if (hasProfile) {
+      document.getElementById('scanBtn').addEventListener('click', startScan);
+    } else {
+      document.getElementById('setupBtn').addEventListener('click', showProfileModal);
+    }
+    document.getElementById('editProfileBtn').addEventListener('click', showProfileModal);
   } else {
     authSection.innerHTML = `
       <a href="/auth" class="btn btn-outline">🔐 Connect Gmail</a>
@@ -55,6 +70,67 @@ function renderAuthSection(authenticated) {
     emptyState.querySelector('.empty-title').textContent = 'Connect your Gmail to get started';
   }
 }
+
+/* ── Profile Modal ─────────────────────────────────────────────────────────── */
+function showProfileModal() {
+  // Pre-fill form if profile exists
+  fetchJSON('/api/profile').then(({ profile }) => {
+    if (profile) {
+      document.getElementById('pLocation').value    = profile.location || '';
+      document.getElementById('pCommute').value     = profile.commuteCities || '';
+      document.getElementById('pRemote').checked    = profile.openToRemote !== false;
+      document.getElementById('pTitles').value      = profile.targetTitles || '';
+      document.getElementById('pLocalPay').value    = profile.localPay || '';
+      document.getElementById('pRemotePay').value   = profile.remotePay || '';
+      document.getElementById('pBackground').value  = profile.background || '';
+      document.getElementById('pSkip').value        = profile.skipCriteria || '';
+    }
+  });
+  profileModal.classList.remove('hidden');
+}
+
+function hideProfileModal() {
+  profileModal.classList.add('hidden');
+}
+
+profileForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const btn = document.getElementById('saveProfileBtn');
+  btn.disabled = true;
+  btn.textContent = 'Saving…';
+
+  const profile = {
+    location:      document.getElementById('pLocation').value.trim(),
+    commuteCities: document.getElementById('pCommute').value.trim(),
+    openToRemote:  document.getElementById('pRemote').checked,
+    targetTitles:  document.getElementById('pTitles').value.trim(),
+    localPay:      document.getElementById('pLocalPay').value.trim(),
+    remotePay:     document.getElementById('pRemotePay').value.trim(),
+    background:    document.getElementById('pBackground').value.trim(),
+    skipCriteria:  document.getElementById('pSkip').value.trim()
+  };
+
+  try {
+    const res = await fetch('/api/profile', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(profile)
+    });
+    const data = await res.json();
+    if (data.ok) {
+      hideProfileModal();
+      // Re-render header with scan button now available
+      renderAuthSection(true, true);
+    } else {
+      alert(data.error || 'Failed to save profile. Please try again.');
+    }
+  } catch {
+    alert('Failed to save profile. Please try again.');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Save profile & scan inbox';
+  }
+});
 
 /* ── Scan ──────────────────────────────────────────────────────────────────── */
 function startScan() {
@@ -142,7 +218,6 @@ function startScan() {
     isScanning = false;
     hideStatusBar();
 
-    // If we got listings before the connection dropped, show them
     if (allListings.length > 0) {
       renderListings();
     } else {

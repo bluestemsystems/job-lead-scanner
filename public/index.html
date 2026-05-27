@@ -100,6 +100,65 @@
     <p>Powered by Gmail API + Claude · reads <strong>gmail.readonly</strong> only · nothing is stored</p>
   </footer>
 
+  <!-- ── Profile Setup Modal ────────────────────────────────── -->
+  <div id="profileModal" class="profile-modal hidden">
+    <div class="profile-modal-box">
+      <div class="profile-modal-header">
+        <h2>Set up your job profile</h2>
+        <p>Tell us about yourself so we can score every listing against your actual goals.</p>
+      </div>
+      <form id="profileForm" class="profile-form">
+
+        <div class="form-row">
+          <label for="pLocation">Your city &amp; state <span class="req">*</span></label>
+          <input type="text" id="pLocation" placeholder="e.g. Austin, TX" required />
+        </div>
+
+        <div class="form-row">
+          <label for="pCommute">Cities you'll commute to <span class="hint">(comma separated, leave blank if remote only)</span></label>
+          <input type="text" id="pCommute" placeholder="e.g. San Antonio, Round Rock, Kyle" />
+        </div>
+
+        <div class="form-row form-row--check">
+          <label class="check-label">
+            <input type="checkbox" id="pRemote" checked />
+            Open to remote work
+          </label>
+        </div>
+
+        <div class="form-row">
+          <label for="pTitles">Target job titles <span class="req">*</span> <span class="hint">(comma separated)</span></label>
+          <input type="text" id="pTitles" placeholder="e.g. Operations Coordinator, Executive Assistant, Office Manager" required />
+        </div>
+
+        <div class="form-row-2col">
+          <div class="form-row">
+            <label for="pLocalPay">Local pay target</label>
+            <input type="text" id="pLocalPay" placeholder="e.g. $17-22/hr or $40-50k/yr" />
+          </div>
+          <div class="form-row">
+            <label for="pRemotePay">Remote pay target</label>
+            <input type="text" id="pRemotePay" placeholder="e.g. $60-90k/yr" />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <label for="pBackground">Your background <span class="req">*</span></label>
+          <textarea id="pBackground" rows="5" placeholder="Summarize your work history, skills, and experience. The more detail, the better the scoring." required></textarea>
+        </div>
+
+        <div class="form-row">
+          <label for="pSkip">Skip criteria <span class="hint">(optional — types of roles to always skip)</span></label>
+          <textarea id="pSkip" rows="3" placeholder="e.g. Commission-only sales, roles requiring a degree I don't have, manufacturing floor work"></textarea>
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary" id="saveProfileBtn">Save profile &amp; scan inbox</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <script src="app.js"></script>
 </body>
 </html>

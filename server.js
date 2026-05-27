@@ -6,7 +6,7 @@ const Anthropic = require('@anthropic-ai/sdk');
 const path = require('path');
 
 const app = express();
-const PORT = process.env.PORT || 8080;
+const PORT = process.env.PORT || 3000;
 
 // ─── Clients ──────────────────────────────────────────────────────────────────
 
@@ -73,26 +73,69 @@ app.get('/logout', (req, res) => {
   req.session.destroy(() => res.redirect('/'));
 });
 
+// ─── Profile ───────────────────────────────────────────────────────────────────
+
+app.get('/api/profile', (req, res) => {
+  res.json({ profile: req.session.profile || null });
+});
+
+app.post('/api/profile', (req, res) => {
+  const { location, commuteCities, openToRemote, targetTitles, localPay, remotePay, background, skipCriteria } = req.body;
+  if (!location || !targetTitles || !background) {
+    return res.status(400).json({ error: 'location, targetTitles, and background are required' });
+  }
+  req.session.profile = { location, commuteCities, openToRemote, targetTitles, localPay, remotePay, background, skipCriteria };
+  req.session.save(err => {
+    if (err) return res.status(500).json({ error: 'Failed to save profile' });
+    res.json({ ok: true });
+  });
+});
+
 // ─── Status ────────────────────────────────────────────────────────────────────
 
 app.get('/api/status', (req, res) => {
-  res.json({ authenticated: !!req.session.tokens });
+  res.json({
+    authenticated: !!req.session.tokens,
+    hasProfile: !!req.session.profile
+  });
 });
 
-// ─── Scoring system prompt ────────────────────────────────────────────────────
+// ─── Scoring prompt builder ────────────────────────────────────────────────────
 
-const SCORING_SYSTEM_PROMPT = `You are a job lead analyst for Wren Willett, a job seeker in New Braunfels, TX.
+function buildScoringPrompt(profile) {
+  const {
+    location = '',
+    commuteCities = '',
+    openToRemote = true,
+    targetTitles = '',
+    localPay = '',
+    remotePay = '',
+    background = '',
+    skipCriteria = ''
+  } = profile;
 
-BACKGROUND: Office Administrator / Operations at KETOS Inc (Nov 2024 to Apr 2026, laid off). Support Operations Executive at Wagestream (fintech SaaS, remote). Fraud Support Supervisor at TaskUs (supervised 20-person team). Certified Pharmacy Technician Manager at CVS. Wedding officiant and small business owner (Wildstar Weddings). Skills include Google Workspace, QuickBooks, Zapier, Google Apps Script, Salesforce, Slack, HRIS exposure across roles (Trinet, ADP, Workday, Gusto), SQL familiarity, ServiceTitan, Sage. Certs: Intuit Bookkeeping Certificate / QBOA ProAdvisor, Texas Notary Public.
+  const remoteNote = openToRemote ? 'Open to remote work.' : 'Prefers local or in-person only.';
+  const commuteNote = commuteCities.trim() ? `Will commute to: ${commuteCities}.` : '';
+  const payNote = [
+    localPay ? `Local: ${localPay}` : '',
+    remotePay ? `Remote: ${remotePay}` : ''
+  ].filter(Boolean).join('. ');
 
-TARGET ROLES AND PAY: Local admin or front desk $17-20/hr. Operations coordinator local $40-50k/yr. Operations coordinator remote $50-65k/yr. EA remote tech $75-100k/yr. Customer Success remote $60-80k/yr. Clinical front desk $16-20/hr. Banking or teller $18-22/hr.
+  return `You are a job lead analyst for a job seeker.
 
-LOCATION: New Braunfels TX. Will commute to San Antonio, San Marcos, Seguin, Kyle, Buda. Remote is fine.
+LOCATION: ${location}. ${commuteNote} ${remoteNote}
 
-SKIP THESE: Commission-only sales, MLM-adjacent, door-to-door, staffing agency generic posts, roles requiring degrees she does not have (engineering, law, medicine), manufacturing floor roles, roles requiring 5+ years of specialized experience she lacks.
+TARGET ROLES: ${targetTitles}
 
-Extract all job listings from the email content provided and score each one. Return only valid JSON, no markdown, no explanation. Format:
-{"listings":[{"title":"Job Title","company":"Company Name","location":"City ST or Remote","pay":"pay info if mentioned or null","score":"strong or maybe or skip","reason":"1-2 sentences why","applyUrl":"URL if present or null"}]}`;
+PAY TARGETS: ${payNote}
+
+BACKGROUND: ${background}
+
+${skipCriteria ? `SKIP THESE: ${skipCriteria}` : ''}
+
+Extract all job listings from the email content provided and score each one against this person's profile. Return only valid JSON, no markdown, no explanation. Format:
+{"listings":[{"title":"Job Title","company":"Company Name","location":"City ST or Remote","pay":"pay info if mentioned or null","score":"strong or maybe or skip","reason":"1-2 sentences why this matches or does not match the person's background and targets","applyUrl":"URL if present or null"}]}`;
+}
 
 // ─── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -132,7 +175,7 @@ function decodeEmailBody(payload) {
   return raw.substring(0, 9000); // Stay comfortably under token limits
 }
 
-async function scoreEmail(subject, body) {
+async function scoreEmail(subject, body, profile) {
   if (!body.trim()) return { listings: [] };
 
   const userPrompt = `Email Subject: ${subject}\n\nEmail Body:\n${body}`;
@@ -141,7 +184,7 @@ async function scoreEmail(subject, body) {
     const response = await anthropic.messages.create({
       model: 'claude-haiku-4-5-20251001',
       max_tokens: 2048,
-      system: SCORING_SYSTEM_PROMPT,
+      system: buildScoringPrompt(profile),
       messages: [{ role: 'user', content: userPrompt }]
     });
 
@@ -199,6 +242,14 @@ app.get('/api/scan', async (req, res) => {
     send({ ...payload, type: 'done' });
     res.end();
   }
+
+  if (!req.session.profile) {
+    send({ type: 'error', message: 'No profile set up. Please complete your profile first.' });
+    res.end();
+    return;
+  }
+
+  const profile = req.session.profile;
 
   try {
     const oauth2Client = createOAuth2Client();
@@ -288,7 +339,7 @@ app.get('/api/scan', async (req, res) => {
           pct: Math.round(((processed + 1) / allIds.length) * 100)
         });
 
-        const scored = await scoreEmail(subject, body);
+        const scored = await scoreEmail(subject, body, profile);
         if (scored.listings?.length) {
           allListings = allListings.concat(scored.listings);
         }
